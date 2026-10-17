@@ -117,6 +117,7 @@ export function TicketDetail({ ticket, aside }: { ticket: Detail; aside?: React.
           <div className="grid grid-cols-2 gap-2">
             <Prop label="Due">
               <Input
+                key={ticket.dueDate ?? "none"}
                 type="date"
                 defaultValue={ticket.dueDate ?? ""}
                 onBlur={(e) => e.target.value !== (ticket.dueDate ?? "") && update({ dueDate: e.target.value || null })}
@@ -124,6 +125,7 @@ export function TicketDetail({ ticket, aside }: { ticket: Detail; aside?: React.
             </Prop>
             <Prop label="Estimate">
               <Input
+                key={String(ticket.estimate)}
                 type="number"
                 min={0}
                 step={0.5}

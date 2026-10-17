@@ -96,8 +96,8 @@ export function ProjectForm({
         <Textarea id="p-desc" rows={4} value={v.description} onChange={(e) => setV({ ...v, description: e.target.value })} />
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <div className="space-y-1.5">
-          <Label>Status</Label>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">Status</span>
           <NativeSelect value={v.status} onChange={(e) => setV({ ...v, status: e.target.value as ProjectFormValues["status"] })}>
             {PROJECT_STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -105,13 +105,13 @@ export function ProjectForm({
               </option>
             ))}
           </NativeSelect>
-        </div>
-        <div className="space-y-1.5">
-          <Label>Target date</Label>
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">Target date</span>
           <Input type="date" value={v.targetDate ?? ""} onChange={(e) => setV({ ...v, targetDate: e.target.value || null })} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Objective</Label>
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">Objective</span>
           <NativeSelect value={v.objectiveId ?? ""} onChange={(e) => setV({ ...v, objectiveId: e.target.value || null })}>
             <option value="">None</option>
             {objectives.map((o) => (
@@ -120,7 +120,7 @@ export function ProjectForm({
               </option>
             ))}
           </NativeSelect>
-        </div>
+        </label>
       </div>
       <div className="flex justify-end gap-2">
         {onCancel && (

@@ -385,6 +385,15 @@ export async function createTicket(input: CreateTicketInput, actor: Actor = "use
 }
 
 const updateTicketInput = ticketFields.partial();
+
+const FIELD_LABEL: Record<string, string> = {
+  priorityId: "priority",
+  milestoneId: "milestone",
+  parentId: "parent",
+  dueDate: "due date",
+  acceptanceCriteria: "acceptance criteria",
+  technicalNotes: "technical notes",
+};
 export type UpdateTicketInput = z.input<typeof updateTicketInput>;
 
 export async function updateTicket(id: string, input: UpdateTicketInput, actor: Actor = "user") {
@@ -421,7 +430,7 @@ export async function updateTicket(id: string, input: UpdateTicketInput, actor: 
         entityId: id,
         projectId: current.projectId,
         ticketId: id,
-        summary: `Updated ${changed.join(", ")}`,
+        summary: `Updated ${changed.map((f) => FIELD_LABEL[f] ?? f).join(", ")}`,
         data: { fields: changed },
         actor,
       });

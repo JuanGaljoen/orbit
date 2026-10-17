@@ -196,14 +196,14 @@ function MilestoneForm({ initial, onSubmit }: { initial?: FormValues; onSubmit: 
         <Textarea id="m-desc" rows={3} value={v.description} onChange={(e) => setV({ ...v, description: e.target.value })} />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label>Start</Label>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">Start</span>
           <Input type="date" value={v.startDate ?? ""} onChange={(e) => setV({ ...v, startDate: e.target.value || null })} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Target</Label>
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">Target</span>
           <Input type="date" value={v.targetDate ?? ""} onChange={(e) => setV({ ...v, targetDate: e.target.value || null })} />
-        </div>
+        </label>
       </div>
       <div className="flex justify-end">
         <Button type="submit" disabled={!v.name.trim()}>

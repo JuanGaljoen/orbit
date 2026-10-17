@@ -7,9 +7,10 @@ import type { SeriesPoint } from "@/server/services/progress";
 const DONE = "#3987e5";
 const SCOPE = "#d95926";
 
-const W = 640;
-const H = 180;
-const PAD = { top: 12, right: 44, bottom: 22, left: 30 };
+// Wide viewBox so text keeps roughly its CSS size at typical page widths.
+const W = 1100;
+const H = 200;
+const PAD = { top: 12, right: 40, bottom: 22, left: 30 };
 
 /** Burn-up: scope vs done over time, from the activity log. Hover shows both values for a day. */
 export function Burnup({ series }: { series: SeriesPoint[] }) {
@@ -37,7 +38,7 @@ export function Burnup({ series }: { series: SeriesPoint[] }) {
       <div className="relative">
         <svg
           viewBox={`0 0 ${W} ${H}`}
-          className="w-full touch-none"
+          className="w-full max-w-[1100px] touch-none"
           role="img"
           aria-label={`Burn-up: ${last.done} of ${last.scope} done as of ${last.date}`}
           onPointerMove={(e) => {

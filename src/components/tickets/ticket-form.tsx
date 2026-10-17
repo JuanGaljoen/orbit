@@ -5,7 +5,6 @@ import { createLabelAction } from "@/actions/vocab";
 import { useApp } from "@/components/app/app-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { TICKET_TYPES, type TicketType } from "@/db/schema";
@@ -253,11 +252,12 @@ export function TicketForm({
   );
 }
 
+/** A native <label> wrapper so every control is announced and addressable by its label. */
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
+    <label className="block space-y-1.5">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
       {children}
-    </div>
+    </label>
   );
 }
