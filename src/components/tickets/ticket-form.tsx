@@ -30,9 +30,9 @@ export type TicketFormValues = {
 };
 
 export function useTicketDefaults(partial: Partial<TicketFormValues> = {}): TicketFormValues {
-  const { projects, statuses, priorities } = useApp();
+  const { projects, statuses, priorities, defaultProjectId } = useApp();
   return {
-    projectId: partial.projectId ?? projects[0]?.id ?? "",
+    projectId: partial.projectId ?? defaultProjectId ?? projects[0]?.id ?? "",
     title: "",
     type: "task",
     statusId: partial.statusId ?? statuses.find((s) => s.category === "todo")?.id ?? statuses[0]?.id ?? "",

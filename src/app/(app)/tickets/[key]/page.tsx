@@ -29,7 +29,13 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[key]">
           {ticket.projectKey}
         </Link>
         / <span className="font-mono">{ticket.key}</span>
-        <span className="ml-auto">
+        <span className="ml-auto flex items-center gap-2">
+          <Link
+            href={`/assistant?ask=${encodeURIComponent(`Review ${ticket.key}: inspect it and related tickets, then propose an improved description, testable acceptance criteria, priority and any missing dependencies or subtasks.`)}`}
+            className="hover:text-foreground"
+          >
+            Improve with AI
+          </Link>
           <BriefButton ticketKey={ticket.key} />
         </span>
       </nav>

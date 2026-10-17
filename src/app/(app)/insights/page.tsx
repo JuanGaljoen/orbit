@@ -3,7 +3,8 @@ import { Findings, Recommendations, UntrackedWork } from "@/components/insights"
 import { PageBody, PageHeader, Section } from "@/components/page";
 import { NativeSelectNav } from "@/components/select-nav";
 import { requireUser } from "@/server/auth";
-import { intelligenceReport, STALE_DAYS } from "@/server/services/intelligence";
+import { intelligenceReport } from "@/server/services/intelligence";
+import { getSetting } from "@/server/services/settings";
 import { listProjects } from "@/server/services/projects";
 
 export const metadata = { title: "Insights" };
@@ -13,7 +14,7 @@ export default async function InsightsPage({ searchParams }: PageProps<"/insight
   const projects = await listProjects();
   const key = (await searchParams).project;
   const project = projects.find((p) => p.key === key);
-  const r = await intelligenceReport(project ? [project.id] : undefined);
+  const [r, prefs] = await Promise.all([intelligenceReport(project ? [project.id] : undefined), getSetting("preferences")]);
 
   return (
     <>
@@ -74,7 +75,7 @@ export default async function InsightsPage({ searchParams }: PageProps<"/insight
         <Section title="Tickets vs GitHub">
           <Findings items={r.discrepancies} empty="Ticket statuses agree with linked GitHub activity." />
         </Section>
-        <Section title={`Stale (no movement in ${STALE_DAYS}+ days)`}>
+        <Section title={`Stale (no movement in ${prefs.staleDays}+ days)`}>
           <Findings items={r.stale} empty="Nothing in progress has gone stale." />
         </Section>
         <Section title="Implemented but not in tickets (14 days)">

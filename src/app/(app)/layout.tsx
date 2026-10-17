@@ -7,16 +7,18 @@ import { Sidebar } from "@/components/app/sidebar";
 import { requireUser } from "@/server/auth";
 import { listMilestones } from "@/server/services/milestones";
 import { listProjects } from "@/server/services/projects";
+import { getSetting } from "@/server/services/settings";
 import { listLabels, listPriorities, listStatuses } from "@/server/services/vocab";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const session = await requireUser();
-  const [projects, milestones, statuses, priorities, labels] = await Promise.all([
+  const [projects, milestones, statuses, priorities, labels, prefs] = await Promise.all([
     listProjects(),
     listMilestones(),
     listStatuses(),
     listPriorities(),
     listLabels(),
+    getSetting("preferences"),
   ]);
 
   return (
@@ -27,6 +29,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         statuses,
         priorities,
         labels,
+        defaultProjectId: projects.find((p) => p.key === prefs.defaultProjectKey)?.id ?? null,
       }}
     >
       <div className="flex min-h-screen flex-col md:flex-row">

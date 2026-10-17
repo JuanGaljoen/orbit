@@ -4,6 +4,7 @@ import { activity, ghCommits, ghPullRequests, repositories, ticketDeps, ticketLi
 import { addDays, daysBetween, toIsoDate, today } from "@/lib/dates";
 import { projectRepositoryIds } from "./github";
 import { listObjectives } from "./objectives";
+import { getSetting } from "./settings";
 import { listProjects } from "./projects";
 import { listTickets, type TicketSummary } from "./tickets";
 import { milestoneViews, type MilestoneWithProgress } from "./views";
@@ -45,14 +46,15 @@ async function context(projectIds?: string[]) {
 
 export async function staleTickets(projectIds?: string[]): Promise<Finding[]> {
   const { open, ghEvents } = await context(projectIds);
-  const cutoff = Date.now() - STALE_DAYS * 86_400_000;
+  const staleDays = (await getSetting("preferences")).staleDays ?? STALE_DAYS;
+  const cutoff = Date.now() - staleDays * 86_400_000;
   return open
     .filter((t) => (t.status.category === "in_progress" || t.status.category === "in_review") && t.statusChangedAt.getTime() < cutoff)
     .filter((t) => !ghEvents.some((e) => e.ticketId === t.id && e.at.getTime() >= cutoff))
     .map((t) => ({
       ticket: t,
       title: `${t.key} has been ${t.status.name} for ${Math.floor((Date.now() - t.statusChangedAt.getTime()) / 86_400_000)} days`,
-      detail: `No status change and no linked GitHub activity in the last ${STALE_DAYS} days.`,
+      detail: `No status change and no linked GitHub activity in the last ${staleDays} days.`,
     }));
 }
 

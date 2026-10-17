@@ -9,6 +9,8 @@ export type Vocab = {
   statuses: { id: string; name: string; category: StatusCategory; color: string; position: number }[];
   priorities: { id: string; name: string; rank: number; color: string }[];
   labels: { id: string; name: string; color: string }[];
+  /** Settings → Preferences: quick-create's project when none is implied by the page. */
+  defaultProjectId: string | null;
 };
 
 export type QuickCreateDefaults = {
