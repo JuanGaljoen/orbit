@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   closestCorners,
   DndContext,
@@ -38,7 +38,12 @@ export function Board({ tickets, projectId }: { tickets: TicketSummary[]; projec
   const { statuses, openQuickCreate } = useApp();
   const [cols, setCols] = useState(() => group(tickets, statuses.map((s) => s.id)));
   const [activeId, setActiveId] = useState<string | null>(null);
-  useEffect(() => setCols(group(tickets, statuses.map((s) => s.id))), [tickets, statuses]);
+  // Re-group when the server sends fresh tickets (after refresh), without an effect.
+  const [source, setSource] = useState(tickets);
+  if (source !== tickets) {
+    setSource(tickets);
+    setCols(group(tickets, statuses.map((s) => s.id)));
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

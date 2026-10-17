@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
-import { activity, projects } from "@/db/schema";
+import { activity, projects, tickets } from "@/db/schema";
 import { today } from "@/lib/dates";
 import { listMilestones } from "./milestones";
 import { progressByMilestone } from "./progress";
@@ -24,11 +24,18 @@ export async function recentActivity(opts: { projectIds?: string[]; since?: Date
   if (opts.projectIds) conds.push(inArray(activity.projectId, opts.projectIds));
   if (opts.since) conds.push(gte(activity.createdAt, opts.since));
   return db
-    .select({ a: activity, projectKey: projects.key })
+    .select({ a: activity, projectKey: projects.key, number: tickets.number })
     .from(activity)
     .leftJoin(projects, eq(projects.id, activity.projectId))
+    .leftJoin(tickets, eq(tickets.id, activity.ticketId))
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(desc(activity.createdAt))
     .limit(opts.limit ?? 30)
-    .then((rows) => rows.map((r) => ({ ...r.a, projectKey: r.projectKey })));
+    .then((rows) =>
+      rows.map((r) => ({
+        ...r.a,
+        projectKey: r.projectKey,
+        ticketKey: r.number != null && r.projectKey ? `${r.projectKey}-${r.number}` : null,
+      })),
+    );
 }

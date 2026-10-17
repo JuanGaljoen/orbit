@@ -2,7 +2,7 @@ import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { getDb } from "@/db";
 import { repositories } from "@/db/schema";
-import { useTestDb } from "../../../test/db";
+import { setupTestDb } from "../../../test/db";
 import { acceptSuggestion, addManualLink, githubActivity, pendingSuggestions } from "../services/github";
 import { createProject } from "../services/projects";
 import { createTicket, getTicket, getTicketSummary } from "../services/tickets";
@@ -57,7 +57,7 @@ describe("aggregateChecks", () => {
 });
 
 describe("webhooks", () => {
-  useTestDb();
+  setupTestDb();
 
   async function setup() {
     const project = await createProject({ key: "ORB", name: "Orbit" });

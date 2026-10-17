@@ -33,8 +33,8 @@ export function ProjectSettings({
           initial={project}
           objectives={objectives}
           onSubmit={async (v) => {
-            const { key: _key, ...rest } = v;
-            return !!(await call(updateProjectAction(project.id, rest), "Project saved"));
+            const { name, description, status, targetDate, objectiveId } = v;
+            return !!(await call(updateProjectAction(project.id, { name, description, status, targetDate, objectiveId }), "Project saved"));
           }}
         />
       </section>

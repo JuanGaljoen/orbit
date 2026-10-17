@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { useTestDb } from "../../../test/db";
+import { setupTestDb } from "../../../test/db";
 import { createMilestone } from "./milestones";
 import { computeProgress, progressByMilestone, progressByProject, progressSeries } from "./progress";
 import { createProject } from "./projects";
@@ -33,7 +33,7 @@ describe("computeProgress", () => {
 });
 
 describe("progress from real data", () => {
-  useTestDb();
+  setupTestDb();
 
   it("excludes archived tickets and carries subtasks into their parent's milestone", async () => {
     const project = await createProject({ key: "ORB", name: "Orbit" });

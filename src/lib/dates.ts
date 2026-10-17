@@ -27,3 +27,7 @@ export function daysBetween(fromIso: string, toIso: string): number {
     (Date.parse(`${toIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`)) / 86_400_000,
   );
 }
+
+export function daysAgo(n: number): Date {
+  return new Date(Date.now() - n * 86_400_000);
+}

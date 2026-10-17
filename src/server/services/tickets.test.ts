@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { useTestDb } from "../../../test/db";
+import { setupTestDb } from "../../../test/db";
 import { createMilestone } from "./milestones";
 import { createProject } from "./projects";
 import {
@@ -14,7 +14,7 @@ import {
 } from "./tickets";
 import { listPriorities, listStatuses } from "./vocab";
 
-useTestDb();
+setupTestDb();
 
 async function setup() {
   const project = await createProject({ key: "orb", name: "Orbit" });

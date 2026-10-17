@@ -72,3 +72,13 @@ export function ProgressBar({ value, className }: { value: number | null; classN
 export function pct(v: number | null) {
   return v == null ? "—" : `${Math.round(v * 100)}%`;
 }
+
+export function Stat({ label, value, sub, warn }: { label: string; value: string; sub?: string; warn?: boolean }) {
+  return (
+    <div className="rounded-lg border p-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className={cn("mt-1 text-xl font-semibold tabular-nums", warn && "text-amber-400")}>{value}</div>
+      {sub && <div className="mt-0.5 text-xs text-muted-foreground">{sub}</div>}
+    </div>
+  );
+}

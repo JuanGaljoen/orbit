@@ -41,6 +41,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
               )}
               <span className="truncate">{session.login}</span>
               {session.login !== "local" && (
+                // eslint-disable-next-line @next/next/no-html-link-for-pages -- API route needs a full navigation
                 <a href="/api/auth/logout" className="ml-auto hover:text-foreground" aria-label="Sign out">
                   <LogOut className="size-4" />
                 </a>

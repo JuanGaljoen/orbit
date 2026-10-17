@@ -36,6 +36,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         )}
         {mode === "github" ? (
           <Button asChild className="w-full">
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- API route needs a full navigation */}
             <a href="/api/auth/login">Sign in with GitHub</a>
           </Button>
         ) : (

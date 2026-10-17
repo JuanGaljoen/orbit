@@ -216,6 +216,18 @@ export async function githubActivity(opts: { repositoryIds?: string[]; days?: nu
   };
 }
 
+/** The synced PR rows behind a ticket's PR links (state + CI). */
+export async function linkedPullRequests(links: { kind: string; repositoryId: string; ref: string }[]) {
+  const prLinks = links.filter((l) => l.kind === "pr");
+  if (!prLinks.length) return [];
+  const db = await getDb();
+  const rows = await db
+    .select()
+    .from(ghPullRequests)
+    .where(inArray(ghPullRequests.repositoryId, [...new Set(prLinks.map((l) => l.repositoryId))]));
+  return rows.filter((pr) => prLinks.some((l) => l.repositoryId === pr.repositoryId && l.ref === String(pr.number)));
+}
+
 export async function projectRepositoryIds(projectIds: string[]) {
   if (!projectIds.length) return [];
   const db = await getDb();
