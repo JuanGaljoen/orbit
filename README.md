@@ -99,6 +99,7 @@ pnpm test           # vitest — services against in-memory Postgres
 pnpm test:e2e       # playwright — the full workflow in a browser
 pnpm lint && pnpm typecheck
 pnpm db:generate    # after editing src/db/schema.ts → new migration in drizzle/
+pnpm import:tickets export.json   # bulk import keeping keys + dates (format: src/server/services/import.ts)
 ```
 
 Architecture: all domain logic lives in `src/server/services/*` behind validated inputs. Server
