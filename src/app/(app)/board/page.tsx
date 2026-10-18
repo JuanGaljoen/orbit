@@ -51,15 +51,6 @@ export default async function BoardsPage({ searchParams }: PageProps<"/board">) 
               </Link>
             );
           })}
-          {projects.length > 1 && (
-            <Link href="/board/all" className={tile}>
-              <div className="h-12 shrink-0 bg-[repeating-linear-gradient(135deg,var(--muted)_0_8px,transparent_8px_16px)]" />
-              <div className="flex flex-1 flex-col gap-1 p-3">
-                <span className="font-medium">All projects</span>
-                <span className="text-xs text-muted-foreground">Every project&apos;s tickets on one board</span>
-              </div>
-            </Link>
-          )}
           <NewProjectDialog
             objectives={objectives}
             goTo="board"

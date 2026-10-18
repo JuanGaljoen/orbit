@@ -39,8 +39,9 @@ running, tickets live in Orbit itself).
 - **Leaf ticket** — a ticket with no (non-archived) subtasks. Nesting is one level deep.
 - **Blocked** — has a blocker whose status category isn't `done`.
 - **Implementation-supported** — done *and* linked to a merged PR or commit.
-- **Board** — a project's Kanban (`/board/KEY`); `/board/all` is the combined view. Boards are
-  projects, not a separate entity — "Create new board" creates a project.
+- **Board** — a project's Kanban (`/board/KEY`). Boards are projects, not a separate entity —
+  "Create new board" creates a project. There is deliberately no combined board; the dashboard is
+  the cross-project view.
 
 ## Testing
 
