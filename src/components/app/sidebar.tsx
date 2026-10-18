@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Menu, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { boardTint } from "@/lib/board-tint";
 import { cn } from "@/lib/utils";
 import { useApp } from "./app-context";
 import { NAV } from "./nav";
@@ -52,13 +53,14 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           {projects.map((p) => (
             <Link
               key={p.id}
-              href={`/projects/${p.key}`}
+              href={`/board/${p.key}`}
               onClick={onNavigate}
               className={cn(
                 "flex items-center gap-2 rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                pathname.startsWith(`/projects/${p.key}`) && "bg-muted text-foreground",
+                (pathname === `/board/${p.key}` || pathname.startsWith(`/projects/${p.key}`)) && "bg-muted text-foreground",
               )}
             >
+              <span className={cn("size-2 shrink-0 rounded-sm", boardTint(p.key))} />
               <span className="w-10 shrink-0 font-mono text-[11px]">{p.key}</span>
               <span className="truncate">{p.name}</span>
             </Link>
