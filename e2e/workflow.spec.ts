@@ -83,7 +83,9 @@ test("3. create tickets with a dependency", async () => {
 });
 
 test("4. move a ticket on the Kanban board", async () => {
-  await page.goto("/board?project=OE");
+  await page.goto("/board");
+  await page.getByRole("main").getByRole("link", { name: /OE Orbit E2E/ }).click();
+  await expect(page).toHaveURL(/\/board\/OE$/);
   const card = page.locator("a", { hasText: "Wire the API" });
   const target = page.locator("div.w-72", { hasText: "In Progress" }).first();
   await expect(card).toBeVisible();
@@ -226,4 +228,24 @@ test("search, palette and bulk edit", async () => {
   await page.locator("select").filter({ hasText: "Set priority…" }).selectOption({ label: "Low" });
   await page.getByRole("alertdialog").getByRole("button", { name: "Apply" }).click();
   await expect(page.getByText(/Updated 3 ticket/)).toBeVisible();
+});
+
+test("boards: one per project, created from the gallery", async () => {
+  await page.goto("/board?project=OE");
+  await expect(page).toHaveURL(/\/board\/OE$/);
+  await page.goto("/board");
+  await page.getByRole("button", { name: "Create new board" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Name").fill("Life Admin");
+  await dialog.getByLabel("Key").fill("LIFE");
+  await dialog.getByRole("button", { name: "Create project" }).click();
+  await expect(page).toHaveURL(/\/board\/LIFE$/);
+  await expect(page.getByRole("heading", { name: /Life Admin/ })).toBeVisible();
+  await page.getByRole("navigation", { name: "Boards" }).getByRole("link", { name: "OE" }).click();
+  await expect(page).toHaveURL(/\/board\/OE$/);
+  await expect(page.locator("a", { hasText: "Wire the API" })).toBeVisible();
+  await page.goto("/board");
+  await page.getByRole("main").getByRole("link", { name: /All projects/ }).click();
+  await expect(page).toHaveURL(/\/board\/all$/);
+  await expect(page.locator("a", { hasText: "Wire the API" })).toBeVisible();
 });

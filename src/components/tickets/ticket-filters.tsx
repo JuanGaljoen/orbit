@@ -18,7 +18,15 @@ const CATEGORY_LABEL: Record<string, string> = {
   done: "Done",
 };
 
-export function TicketFilters({ showSort = true, showStatus = true }: { showSort?: boolean; showStatus?: boolean }) {
+export function TicketFilters({
+  showSort = true,
+  showStatus = true,
+  showProject = true,
+}: {
+  showSort?: boolean;
+  showStatus?: boolean;
+  showProject?: boolean;
+}) {
   const app = useApp();
   const router = useRouter();
   const pathname = usePathname();
@@ -67,7 +75,7 @@ export function TicketFilters({ showSort = true, showStatus = true }: { showSort
         className="h-7 w-48 text-xs"
         aria-label="Search tickets"
       />
-      {select("project", "Project", app.projects.map((p) => ({ value: p.key, label: p.key })))}
+      {showProject && select("project", "Project", app.projects.map((p) => ({ value: p.key, label: p.key })))}
       {showStatus &&
         select("status", "Status", STATUS_CATEGORIES.map((c) => ({ value: c, label: CATEGORY_LABEL[c] })))}
       {select("priority", "Priority", app.priorities.map((p) => ({ value: p.id, label: p.name })))}

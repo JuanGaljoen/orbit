@@ -1,36 +1,71 @@
 import Link from "next/link";
-import { Empty, PageBody, PageHeader } from "@/components/page";
-import { Board } from "@/components/tickets/board";
-import { NewTicketButton } from "@/components/tickets/new-ticket-button";
-import { TicketFilters } from "@/components/tickets/ticket-filters";
-import { filterFromParams } from "@/lib/ticket-params";
+import { redirect } from "next/navigation";
+import { PageBody, PageHeader, pct, ProgressBar } from "@/components/page";
+import { NewProjectDialog } from "@/components/planning/new-project-dialog";
+import { boardTint } from "@/lib/board-tint";
+import { cn } from "@/lib/utils";
 import { requireUser } from "@/server/auth";
+import { listObjectives } from "@/server/services/objectives";
+import { progressByProject } from "@/server/services/progress";
 import { listProjects } from "@/server/services/projects";
-import { listTickets } from "@/server/services/tickets";
 
-export const metadata = { title: "Board" };
+export const metadata = { title: "Boards" };
 
-export default async function BoardPage({ searchParams }: PageProps<"/board">) {
+/** The board gallery: one board per project, Trello-style. */
+export default async function BoardsPage({ searchParams }: PageProps<"/board">) {
   await requireUser();
-  const params = await searchParams;
-  const projects = await listProjects();
-  const filter = filterFromParams(params, { projects });
-  const tickets = await listTickets({ ...filter, sort: "position" });
-  const projectId = filter.projectIds?.length === 1 ? filter.projectIds[0] : undefined;
+  const sp = await searchParams;
+  // Old links (/board?project=KEY) open that project's board.
+  if (typeof sp.project === "string" && sp.project) redirect(`/board/${sp.project.toUpperCase()}`);
+
+  const [projects, objectives] = await Promise.all([listProjects(), listObjectives()]);
+  const progress = await progressByProject(projects.map((p) => p.id));
+  const tile = "flex min-h-32 flex-col overflow-hidden rounded-lg border text-left transition-colors hover:border-foreground/30";
 
   return (
     <>
-      <PageHeader title="Board" description="Drag cards between columns to change status." actions={<NewTicketButton defaults={{ projectId }} />}>
-        <TicketFilters showSort={false} showStatus={false} />
-      </PageHeader>
+      <PageHeader title="Boards" description="One board per project. Pick a board, or create one." />
       <PageBody>
-        {projects.length === 0 ? (
-          <Empty>
-            No projects yet. <Link href="/projects?new=1" className="underline">Create a project</Link> first.
-          </Empty>
-        ) : (
-          <Board tickets={tickets} projectId={projectId} />
-        )}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {projects.map((p) => {
+            const pr = progress.get(p.id)!;
+            return (
+              <Link key={p.id} href={`/board/${p.key}`} className={tile}>
+                <div className={cn("h-12 shrink-0", boardTint(p.key))} />
+                <div className="flex flex-1 flex-col gap-2 p-3">
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-mono text-xs text-muted-foreground">{p.key}</span>
+                    <span className="truncate font-medium">{p.name}</span>
+                  </div>
+                  <div className="mt-auto space-y-1.5">
+                    <ProgressBar value={pr.countPercent} />
+                    <div className="flex gap-3 text-xs text-muted-foreground">
+                      <span>{pr.notStarted} to do</span>
+                      <span>{pr.active} in progress</span>
+                      <span>
+                        {pr.done} done · {pct(pr.countPercent)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+          {projects.length > 1 && (
+            <Link href="/board/all" className={tile}>
+              <div className="h-12 shrink-0 bg-[repeating-linear-gradient(135deg,var(--muted)_0_8px,transparent_8px_16px)]" />
+              <div className="flex flex-1 flex-col gap-1 p-3">
+                <span className="font-medium">All projects</span>
+                <span className="text-xs text-muted-foreground">Every project&apos;s tickets on one board</span>
+              </div>
+            </Link>
+          )}
+          <NewProjectDialog
+            objectives={objectives}
+            goTo="board"
+            tileClassName={cn(tile, "items-center justify-center gap-1 border-dashed bg-muted/20 text-sm text-muted-foreground hover:text-foreground")}
+          />
+        </div>
       </PageBody>
     </>
   );

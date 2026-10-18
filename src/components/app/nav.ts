@@ -15,7 +15,7 @@ import {
 export const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, shortcut: "d" },
   { href: "/tickets", label: "Tickets", icon: ListTodo, shortcut: "t" },
-  { href: "/board", label: "Board", icon: SquareKanban, shortcut: "b" },
+  { href: "/board", label: "Boards", icon: SquareKanban, shortcut: "b" },
   { href: "/projects", label: "Projects", icon: FolderKanban, shortcut: "p" },
   { href: "/objectives", label: "Objectives", icon: Target, shortcut: "o" },
   { href: "/roadmap", label: "Roadmap", icon: Map, shortcut: "r" },

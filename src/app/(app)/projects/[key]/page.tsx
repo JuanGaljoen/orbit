@@ -59,7 +59,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
         }
         actions={
           <>
-            <Link href={`/board?project=${project.key}`} className="text-xs text-muted-foreground hover:text-foreground">
+            <Link href={`/board/${project.key}`} className="text-xs text-muted-foreground hover:text-foreground">
               Board
             </Link>
             <NewTicketButton defaults={{ projectId: project.id }} />
