@@ -12,12 +12,9 @@ import { NotFoundError } from "@/server/errors";
 import { getProjectByKey, listProjects } from "@/server/services/projects";
 import { listTickets } from "@/server/services/tickets";
 
-/** `all` is the combined board; any other segment is a project key. */
-const ALL = "all";
-
 export async function generateMetadata({ params }: PageProps<"/board/[key]">) {
   const { key } = await params;
-  return { title: key === ALL ? "All boards" : `${key.toUpperCase()} board` };
+  return { title: `${key.toUpperCase()} board` };
 }
 
 export default async function BoardPage({ params, searchParams }: PageProps<"/board/[key]">) {
@@ -25,40 +22,30 @@ export default async function BoardPage({ params, searchParams }: PageProps<"/bo
   const { key } = await params;
   const projects = await listProjects();
   // Looked up directly (not from `projects`) so an archived project's board still opens.
-  const project =
-    key === ALL
-      ? null
-      : await getProjectByKey(key).catch((e) => {
-          if (e instanceof NotFoundError) notFound();
-          throw e;
-        });
+  const project = await getProjectByKey(key).catch((e) => {
+    if (e instanceof NotFoundError) notFound();
+    throw e;
+  });
 
   const filter = filterFromParams(await searchParams, { projects });
-  const tickets = await listTickets({ ...filter, ...(project && { projectIds: [project.id] }), sort: "position" });
-  const projectId = project?.id ?? (filter.projectIds?.length === 1 ? filter.projectIds[0] : undefined);
+  const tickets = await listTickets({ ...filter, projectIds: [project.id], sort: "position" });
 
   return (
     <>
       <PageHeader
         title={
-          project ? (
-            <span className="flex items-center gap-2">
-              <span className={cn("inline-block size-2.5 rounded-sm", boardTint(project.key))} />
-              <span className="font-mono text-sm text-muted-foreground">{project.key}</span> {project.name}
-            </span>
-          ) : (
-            "All projects"
-          )
+          <span className="flex items-center gap-2">
+            <span className={cn("inline-block size-2.5 rounded-sm", boardTint(project.key))} />
+            <span className="font-mono text-sm text-muted-foreground">{project.key}</span> {project.name}
+          </span>
         }
         description="Drag cards between columns to change status."
         actions={
           <>
-            {project && (
-              <Link href={`/projects/${project.key}`} className="text-xs text-muted-foreground hover:text-foreground">
-                Project overview
-              </Link>
-            )}
-            <NewTicketButton defaults={{ projectId }} />
+            <Link href={`/projects/${project.key}`} className="text-xs text-muted-foreground hover:text-foreground">
+              Project overview
+            </Link>
+            <NewTicketButton defaults={{ projectId: project.id }} />
           </>
         }
       >
@@ -72,25 +59,17 @@ export default async function BoardPage({ params, searchParams }: PageProps<"/bo
               href={`/board/${p.key}`}
               className={cn(
                 "rounded-md px-2.5 py-1 font-mono text-xs leading-5 text-muted-foreground hover:text-foreground",
-                p.id === project?.id && "bg-muted text-foreground",
+                p.id === project.id && "bg-muted text-foreground",
               )}
             >
               {p.key}
             </Link>
           ))}
-          {projects.length > 1 && (
-            <Link
-              href={`/board/${ALL}`}
-              className={cn("rounded-md px-2.5 py-1 text-muted-foreground hover:text-foreground", !project && "bg-muted text-foreground")}
-            >
-              All
-            </Link>
-          )}
         </nav>
-        <TicketFilters showSort={false} showStatus={false} showProject={!project} />
+        <TicketFilters showSort={false} showStatus={false} showProject={false} />
       </PageHeader>
       <PageBody>
-        <Board tickets={tickets} projectId={projectId} />
+        <Board tickets={tickets} projectId={project.id} />
       </PageBody>
     </>
   );

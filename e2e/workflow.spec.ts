@@ -244,8 +244,7 @@ test("boards: one per project, created from the gallery", async () => {
   await page.getByRole("navigation", { name: "Boards" }).getByRole("link", { name: "OE" }).click();
   await expect(page).toHaveURL(/\/board\/OE$/);
   await expect(page.locator("a", { hasText: "Wire the API" })).toBeVisible();
-  await page.goto("/board");
-  await page.getByRole("main").getByRole("link", { name: /All projects/ }).click();
-  await expect(page).toHaveURL(/\/board\/all$/);
   await expect(page.locator("a", { hasText: "Wire the API" })).toBeVisible();
+  await page.goto("/board");
+  await expect(page.getByRole("main").getByRole("link", { name: /All projects/ })).toHaveCount(0);
 });
