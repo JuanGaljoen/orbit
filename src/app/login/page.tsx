@@ -18,7 +18,9 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   if (await getSession()) redirect("/");
   const { error } = await searchParams;
   const mode = authMode();
-  const message = typeof error === "string" ? ERRORS[error] ?? error : null;
+  // A stale "misconfigured" from an earlier redirect is noise once auth is actually set up.
+  const code = typeof error === "string" && !(error === "misconfigured" && mode !== "misconfigured") ? error : null;
+  const message = code ? (ERRORS[code] ?? code) : null;
 
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
