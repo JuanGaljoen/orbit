@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   closestCorners,
+  type CollisionDetection,
   DndContext,
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
+  pointerWithin,
   useDroppable,
   useSensor,
   useSensors,
@@ -26,6 +28,13 @@ import type { TicketSummary } from "@/server/services/tickets";
 import { accentClass, Dot, LabelChip, PriorityPill, TicketFlags, TypeIcon } from "./badges";
 
 type Columns = Record<string, TicketSummary[]>;
+
+// Drop where the pointer is. closestCorners alone loses empty columns: they stretch to the board's
+// height, so their corners are always farther away than some card's in a full column.
+const collision: CollisionDetection = (args) => {
+  const hits = pointerWithin(args);
+  return hits.length ? hits : closestCorners(args);
+};
 
 function group(tickets: TicketSummary[], statusIds: string[]): Columns {
   const cols: Columns = Object.fromEntries(statusIds.map((id) => [id, []]));
@@ -97,7 +106,7 @@ export function Board({ tickets, projectId }: { tickets: TicketSummary[]; projec
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collision}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}

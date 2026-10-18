@@ -248,3 +248,24 @@ test("boards: one per project, created from the gallery", async () => {
   await page.goto("/board");
   await expect(page.getByRole("main").getByRole("link", { name: /All projects/ })).toHaveCount(0);
 });
+
+test("board: a card dropped mid-way down an empty column lands there", async () => {
+  // A full Todo beside empty columns: the empty columns stretch to the board's height, so the old
+  // corner-distance collision sent drops to a nearby Todo card instead.
+  const headers = { authorization: `Bearer ${E2E.apiToken}` };
+  for (let i = 1; i <= 10; i++)
+    await page.request.post("/api/v1/tickets", { headers, data: { project: "LIFE", title: `Errand ${i}`, status: "todo" } });
+  await page.goto("/board/LIFE");
+  const card = page.locator("a", { hasText: "Errand 1" }).first();
+  const column = (name: string) => page.locator("div.w-72", { has: page.getByText(name, { exact: true }) }).first();
+  const from = (await card.boundingBox())!;
+  const to = (await column("In Progress").boundingBox())!;
+  await page.mouse.move(from.x + 20, from.y + 5);
+  await page.mouse.down();
+  await page.mouse.move(from.x + 40, from.y + 20, { steps: 5 });
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 20 });
+  await page.mouse.up();
+  await page.waitForTimeout(800);
+  await page.reload();
+  await expect(column("In Progress").locator("a", { hasText: "Errand 1" })).toBeVisible();
+});
