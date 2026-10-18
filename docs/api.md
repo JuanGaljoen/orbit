@@ -8,7 +8,7 @@ export ORBIT_API_TOKEN=...
 curl -s -H "Authorization: Bearer $ORBIT_API_TOKEN" $ORBIT/api/v1
 ```
 
-Errors are JSON `{ "error": "…" }` with 400 (invalid), 401 (bad token), 404, 409, 503 (API disabled).
+Errors are JSON `{ "error": "…" }` with 400 (invalid, with the valid values), 401 (bad token), 404, 409 (e.g. a dependency cycle), 503 (API disabled).
 
 ## Read
 
@@ -20,14 +20,32 @@ Errors are JSON `{ "error": "…" }` with 400 (invalid), 401 (bad token), 404, 4
 | GET | `/api/v1/tickets/{KEY-12}/brief` | `text/markdown` implementation brief (same as the in-app button) |
 | GET | `/api/v1/recommendations?project=KEY` | Ranked next tickets with the reasons for each |
 
-## Write (controlled)
+## Write
 
-The API cannot change ticket fields or statuses, delete anything, or touch GitHub.
+Full read/write for your own agents (start-ticket, file-ticket, ship …). Every change is recorded
+in the ticket's history with actor **api**. The one thing the API cannot do is hard-delete — use
+`archived: true` (reversible). Names are matched case-insensitively; an unknown name is a 400 that
+lists the valid values.
 
-| Method | Path | Body | Effect |
-|---|---|---|---|
-| POST | `/api/v1/tickets/{KEY-12}/comments` | `{ "body": "markdown" }` | Adds a comment shown as *Assistant* |
-| POST | `/api/v1/proposals` | `{ "title", "summary", "items": [...] }` | Queues a proposal for review in Orbit → Assistant. Never auto-applied. |
+| Method | Path | Body |
+|---|---|---|
+| POST | `/api/v1/tickets` | `{ project, title, type?, status?, priority?, description?, acceptanceCriteria?, technicalNotes?, dueDate?, estimate?, labels?: [names], milestone?: name, parent?: KEY, blockedBy?: [KEYs] }` → the full ticket |
+| PATCH | `/api/v1/tickets/{KEY-12}` | any of the fields above (except project/blockedBy), plus `archived` → the full ticket. `labels` replaces the set. |
+| POST / DELETE | `/api/v1/tickets/{KEY-12}/blockers` | `{ "blockedBy": "KEY-7" }` |
+| POST | `/api/v1/tickets/{KEY-12}/comments` | `{ "body": "markdown" }` (shown as *Assistant*) |
+| GET | `/api/v1/milestones?project=KEY` | milestones with dates and progress |
+| POST | `/api/v1/proposals` | `{ title, summary, items[] }` — bigger plans queued for review in Orbit → Assistant |
+
+- `status` accepts a status name (`"In Progress"`) or a category (`backlog`, `todo`, `in_progress`, `in_review`, `done`).
+- `type`: `feature | bug | task | improvement | research | documentation`. `priority`: a configured name (`Urgent`, `High`, `Medium`, `Low` by default).
+
+```bash
+# file-ticket
+curl -s -X POST $ORBIT/api/v1/tickets -H "Authorization: Bearer $ORBIT_API_TOKEN" -H 'content-type: application/json' \
+  -d '{"project":"RNG","title":"Handle HEIC uploads","type":"feature","priority":"Low","acceptanceCriteria":"- [ ] HEIC accepted"}'
+# start-ticket
+curl -s -X PATCH $ORBIT/api/v1/tickets/RNG-28 -H "Authorization: Bearer $ORBIT_API_TOKEN" -H 'content-type: application/json' -d '{"status":"In Progress"}'
+```
 
 Proposal `items` use the same format as the in-app assistant
 (`src/server/services/proposals.ts` → `proposalItem`): `create_objective`, `create_project`,

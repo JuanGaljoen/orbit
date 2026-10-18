@@ -1,5 +1,6 @@
 import { STATUS_CATEGORIES, type StatusCategory } from "@/db/schema";
-import { apiHandler } from "@/server/api";
+import { apiHandler, jsonBody } from "@/server/api";
+import { apiCreate } from "@/server/services/ticket-api";
 import { getProjectByKey } from "@/server/services/projects";
 import { listTickets } from "@/server/services/tickets";
 
@@ -19,3 +20,7 @@ export const GET = apiHandler(async (req) => {
   });
   return { count: tickets.length, tickets };
 });
+
+/** Create a ticket. Body: project, title, and optionally type, status, priority, description,
+ *  acceptanceCriteria, technicalNotes, dueDate, estimate, labels[], milestone, parent, blockedBy[]. */
+export const POST = apiHandler(async (req) => apiCreate(await jsonBody(req)));

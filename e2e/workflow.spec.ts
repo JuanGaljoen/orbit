@@ -179,6 +179,28 @@ test("9. review, edit and apply a proposed ticket", async () => {
   expect(t.blockers.map((b: { key: string }) => b.key)).toEqual(["OE-2"]);
 });
 
+test("write API: create, move, block and archive tickets over HTTP", async () => {
+  const headers = { authorization: `Bearer ${E2E.apiToken}` };
+  const created = await page.request.post("/api/v1/tickets", {
+    headers,
+    data: { project: "OE", title: "API-made ticket", status: "Todo", priority: "High", labels: ["api"], milestone: "MVP" },
+  });
+  expect(created.status()).toBe(200);
+  const t = await created.json();
+  expect([t.key, t.status.name, t.priority.name, t.milestoneName]).toEqual(["OE-4", "Todo", "High", "MVP"]);
+  const moved = await (await page.request.patch(`/api/v1/tickets/${t.key}`, { headers, data: { status: "in_progress" } })).json();
+  expect(moved.status.name).toBe("In Progress");
+  const blocked = await (await page.request.post(`/api/v1/tickets/${t.key}/blockers`, { headers, data: { blockedBy: "OE-1" } })).json();
+  expect(blocked.blockers.map((b: { key: string }) => b.key)).toEqual(["OE-1"]);
+  const bad = await page.request.patch(`/api/v1/tickets/${t.key}`, { headers, data: { status: "Shipped" } });
+  expect(bad.status()).toBe(400);
+  expect((await bad.json()).error).toMatch(/Unknown status/);
+  await page.goto(`/tickets/${t.key}`);
+  await expect(page.locator("li", { hasText: "Todo → In Progress" }).filter({ hasText: "api ·" })).toBeVisible();
+  const archived = await (await page.request.patch(`/api/v1/tickets/${t.key}`, { headers, data: { archived: true } })).json();
+  expect(archived.archivedAt).toBeTruthy();
+});
+
 test("10. review progress and decide what to work on next", async () => {
   await page.goto("/");
   await expect(page.getByText("Suggested next")).toBeVisible();

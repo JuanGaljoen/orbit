@@ -89,8 +89,8 @@ Keyboard: `⌘K` palette · `/` search · `C` new ticket · `G` then `D/T/B/P/O/
 
 - Every ticket has an **Implementation brief** button: a markdown brief with description, acceptance
   criteria, dependencies, repo context and linked code.
-- `/api/v1` gives the same programmatically — see [docs/api.md](docs/api.md). Writes are limited to
-  comments and proposals (queued for your review), so repository and ticket changes stay in your hands.
+- `/api/v1` gives your agents read **and write** access to tickets (create, update status/fields,
+  blockers, comments, archive; no hard delete), every change logged as `api` — see [docs/api.md](docs/api.md).
 
 ## Development
 

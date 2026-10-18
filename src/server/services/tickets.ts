@@ -569,7 +569,7 @@ export async function addDependency(ticketId: string, blockedById: string, actor
   });
 }
 
-export async function removeDependency(ticketId: string, blockedById: string) {
+export async function removeDependency(ticketId: string, blockedById: string, actor: Actor = "user") {
   const db = await getDb();
   await db
     .delete(ticketDeps)
@@ -581,6 +581,7 @@ export async function removeDependency(ticketId: string, blockedById: string) {
     entityId: ticketId,
     ticketId,
     summary: `No longer blocked by ${blocker}`,
+    actor,
   });
 }
 

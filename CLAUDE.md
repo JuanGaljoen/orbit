@@ -24,8 +24,9 @@ running, tickets live in Orbit itself).
 
 - **GitHub never completes a ticket.** Webhooks/sync create *suggestions* (`status_suggestions`);
   only the user applies them. A merged PR suggests Done "verify acceptance criteria".
-- **The AI never writes directly.** Its only write is `propose_changes` → `ai_proposals`, applied by
-  the user after review. Same for `/api/v1/proposals`.
+- **The in-app assistant never writes directly.** Its only write is `propose_changes` →
+  `ai_proposals`, applied by the user after review. The token API (`/api/v1`, the user's own agents)
+  has full ticket write by explicit choice — every change logged with actor `api` — but no hard delete.
 - **No invented numbers.** Progress = leaf tickets only (parents represented by subtasks), archived
   excluded, unestimated reported not imputed. Risk and recommendations are rule-based with reasons.
 - **Secrets only in env**, never in the `settings` table.
