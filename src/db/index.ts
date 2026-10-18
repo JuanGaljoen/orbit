@@ -24,6 +24,10 @@ export function isPglite(url = process.env.DATABASE_URL) {
 }
 
 export async function createDb(url = process.env.DATABASE_URL): Promise<Db> {
+  // Serverless file systems are read-only/ephemeral: a missing DATABASE_URL in production is a
+  // misconfiguration, not a cue to fall back to an embedded database.
+  if (!url && process.env.NODE_ENV === "production" && process.env.VERCEL)
+    throw new Error("DATABASE_URL is required in production (Neon connection string)");
   if (isPglite(url)) {
     const { PGlite } = await import("@electric-sql/pglite");
     const { drizzle } = await import("drizzle-orm/pglite");
