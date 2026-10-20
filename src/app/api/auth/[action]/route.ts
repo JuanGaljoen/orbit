@@ -34,6 +34,8 @@ export async function GET(req: NextRequest, ctx: RouteContext<"/api/auth/[action
     url.searchParams.set("scope", "read:user");
     url.searchParams.set("state", state);
     url.searchParams.set("allow_signup", "false");
+    // Signing out only clears our cookie; without this GitHub silently re-authorizes the live session.
+    url.searchParams.set("prompt", "select_account");
     return NextResponse.redirect(url);
   }
 
