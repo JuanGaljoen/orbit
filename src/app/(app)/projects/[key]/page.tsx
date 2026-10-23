@@ -1,9 +1,11 @@
+import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActivityFeed } from "@/components/activity-feed";
 import { Burnup } from "@/components/charts/burnup";
 import { GithubActivityList } from "@/components/github/github-activity";
 import { PageBody, PageHeader, pct, ProgressBar, Section, Stat } from "@/components/page";
+import { MermaidDiagram } from "@/components/planning/diagram";
 import { MilestoneManager } from "@/components/planning/milestones";
 import { ProjectSettings } from "@/components/planning/project-settings";
 import { NewTicketButton } from "@/components/tickets/new-ticket-button";
@@ -18,7 +20,7 @@ import { getProjectByKey, listProjectRepos } from "@/server/services/projects";
 import { listTickets } from "@/server/services/tickets";
 import { milestoneViews, recentActivity } from "@/server/services/views";
 
-const TABS = ["overview", "tickets", "milestones", "settings"] as const;
+const TABS = ["overview", "tickets", "milestones", "architecture", "settings"] as const;
 
 export async function generateMetadata({ params }: PageProps<"/projects/[key]">) {
   return { title: (await params).key.toUpperCase() };
@@ -85,6 +87,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
         {tab === "overview" && <Overview project={project} progress={progress} milestones={milestones} repoIds={repos.map((r) => r.id)} />}
         {tab === "tickets" && <TicketTable tickets={await listTickets({ projectIds: [project.id], sort: "status" })} showProject={false} />}
         {tab === "milestones" && <MilestoneManager projectId={project.id} milestones={milestones} />}
+        {tab === "architecture" && <Architecture project={project} />}
         {tab === "settings" && (
           <ProjectSettings
             project={project}
@@ -95,6 +98,30 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
         )}
       </PageBody>
     </>
+  );
+}
+
+function Architecture({ project }: { project: Awaited<ReturnType<typeof getProjectByKey>> }) {
+  if (!project.diagram)
+    return (
+      <p className="max-w-2xl text-sm text-muted-foreground">
+        No diagram yet. Your agent can push one with{" "}
+        <code className="rounded bg-muted px-1 font-mono text-xs">PUT /api/v1/projects/{project.key}/diagram</code> and a body of{" "}
+        <code className="rounded bg-muted px-1 font-mono text-xs">{"{ mermaid, commit }"}</code>.
+      </p>
+    );
+  return (
+    <Section
+      title="Architecture"
+      actions={
+        <span className="text-xs text-muted-foreground">
+          {project.diagramCommit && <>Drawn from <span className="font-mono">{project.diagramCommit.slice(0, 7)}</span> · </>}
+          {project.diagramUpdatedAt && `updated ${formatDistanceToNow(project.diagramUpdatedAt, { addSuffix: true })}`}
+        </span>
+      }
+    >
+      <MermaidDiagram source={project.diagram} />
+    </Section>
   );
 }
 
