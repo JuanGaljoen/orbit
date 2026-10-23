@@ -114,43 +114,6 @@ export async function getProjectByKey(key: string) {
   return row;
 }
 
-const diagramInput = z.object({
-  mermaid: z.string().trim().min(1, "mermaid is required").max(100_000),
-  commit: z
-    .string()
-    .trim()
-    .regex(/^[0-9a-f]{7,40}$/i, "commit must be a git SHA")
-    .nullable()
-    .optional(),
-});
-
-const diagramOf = (p: Project) => ({ mermaid: p.diagram, commit: p.diagramCommit, updatedAt: p.diagramUpdatedAt });
-
-export async function getProjectDiagram(key: string) {
-  return diagramOf(await getProjectByKey(key));
-}
-
-/** Replaces the project's architecture diagram (Mermaid source, drawn by the user's agent). */
-export async function setProjectDiagram(key: string, input: z.input<typeof diagramInput>, actor: Actor = "user") {
-  const data = parse(diagramInput, input);
-  const project = await getProjectByKey(key);
-  const db = await getDb();
-  const [row] = await db
-    .update(projects)
-    .set({ diagram: data.mermaid, diagramCommit: data.commit ?? null, diagramUpdatedAt: new Date() })
-    .where(eq(projects.id, project.id))
-    .returning();
-  await logActivity(db, {
-    kind: "project.diagram_updated",
-    entityType: "project",
-    entityId: row.id,
-    projectId: row.id,
-    summary: `Updated the architecture diagram of ${row.key}${data.commit ? ` (from ${data.commit.slice(0, 7)})` : ""}`,
-    actor,
-  });
-  return diagramOf(row);
-}
-
 export async function getProject(id: string) {
   const db = await getDb();
   const [row] = await db.select().from(projects).where(eq(projects.id, id));

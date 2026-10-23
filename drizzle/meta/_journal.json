@@ -8,13 +8,6 @@
       "when": 1792231033596,
       "tag": "0000_init",
       "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1792792907090,
-      "tag": "0001_hard_riptide",
-      "breakpoints": true
     }
   ]
 }
