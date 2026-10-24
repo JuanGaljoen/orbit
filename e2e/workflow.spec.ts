@@ -270,7 +270,7 @@ test("board: a card dropped mid-way down an empty column lands there", async () 
   await expect(column("In Progress").locator("a", { hasText: "Errand 1" })).toBeVisible();
 });
 
-test("architecture: several diagram views pushed over the API, one sub-tab each", async () => {
+test("architecture: several diagram views pushed over the API, picked from a dropdown", async () => {
   const headers = { authorization: `Bearer ${E2E.apiToken}` };
   const flow = [
     "sequenceDiagram",
@@ -309,11 +309,13 @@ test("architecture: several diagram views pushed over the API, one sub-tab each"
 
   await page.goto("/projects/OE?tab=architecture");
   await expect(page.getByText(/Drawn from 4bddebc/)).toBeVisible();
-  const tabs = page.getByRole("navigation", { name: "Diagram views" });
-  await expect(tabs.getByRole("link", { name: "Map: modules and services" })).toHaveAttribute("aria-current", "page");
+  const picker = page.getByLabel("Diagram");
+  await expect(picker).toHaveValue("map");
+  await expect(picker.locator("option")).toHaveText(["Map: modules and services", "Flow: generate a ring", "Flow: broken"]);
   await expect(page.locator("main svg").first()).toBeVisible();
 
-  await tabs.getByRole("link", { name: "Flow: generate a ring" }).click();
+  await picker.selectOption({ label: "Flow: generate a ring" });
+  await expect(page).toHaveURL(/view=generate-ring/);
   const svg = page.locator("main svg[aria-roledescription=sequence]");
   await expect(svg).toBeVisible();
   await expect(svg.locator(".sequenceNumber")).toHaveCount(6); // autonumber: one per message
@@ -323,6 +325,6 @@ test("architecture: several diagram views pushed over the API, one sub-tab each"
   await expect(svg.locator(".activation0")).not.toHaveCount(0);
   await page.locator("main").screenshot({ path: "test-results/architecture-flow.png" });
 
-  await tabs.getByRole("link", { name: "Flow: broken" }).click();
+  await picker.selectOption({ label: "Flow: broken" });
   await expect(page.getByText(/Mermaid syntax error/)).toBeVisible();
 });
