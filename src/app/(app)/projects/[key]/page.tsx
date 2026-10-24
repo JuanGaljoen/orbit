@@ -5,6 +5,7 @@ import { ActivityFeed } from "@/components/activity-feed";
 import { Burnup } from "@/components/charts/burnup";
 import { GithubActivityList } from "@/components/github/github-activity";
 import { PageBody, PageHeader, pct, ProgressBar, Section, Stat } from "@/components/page";
+import { NativeSelectNav } from "@/components/select-nav";
 import { MermaidDiagram } from "@/components/planning/diagram";
 import { MilestoneManager } from "@/components/planning/milestones";
 import { ProjectSettings } from "@/components/planning/project-settings";
@@ -116,29 +117,15 @@ function Architecture({ project, view }: { project: Awaited<ReturnType<typeof ge
     <Section
       title="Architecture"
       actions={
-        <span className="text-xs text-muted-foreground">
-          {project.diagramCommit && <>Drawn from <span className="font-mono">{project.diagramCommit.slice(0, 7)}</span> · </>}
-          {project.diagramUpdatedAt && `updated ${formatDistanceToNow(project.diagramUpdatedAt, { addSuffix: true })}`}
+        <span className="flex items-center gap-3 text-xs text-muted-foreground">
+          <NativeSelectNav param="view" label="Diagram" value={active.id} options={views.map((v) => ({ value: v.id, label: v.title }))} />
+          <span>
+            {project.diagramCommit && <>Drawn from <span className="font-mono">{project.diagramCommit.slice(0, 7)}</span> · </>}
+            {project.diagramUpdatedAt && `updated ${formatDistanceToNow(project.diagramUpdatedAt, { addSuffix: true })}`}
+          </span>
         </span>
       }
     >
-      {views.length > 1 && (
-        <nav aria-label="Diagram views" className="mb-4 flex flex-wrap gap-1 border-b pb-2 text-sm">
-          {views.map((v) => (
-            <Link
-              key={v.id}
-              href={`/projects/${project.key}?tab=architecture&view=${v.id}`}
-              aria-current={v.id === active.id ? "page" : undefined}
-              className={cn(
-                "rounded-md px-2.5 py-1 text-muted-foreground hover:text-foreground",
-                v.id === active.id && "bg-muted text-foreground",
-              )}
-            >
-              {v.title}
-            </Link>
-          ))}
-        </nav>
-      )}
       <MermaidDiagram key={active.id} source={active.mermaid} />
     </Section>
   );
