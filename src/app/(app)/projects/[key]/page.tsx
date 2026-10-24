@@ -87,7 +87,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
         {tab === "overview" && <Overview project={project} progress={progress} milestones={milestones} repoIds={repos.map((r) => r.id)} />}
         {tab === "tickets" && <TicketTable tickets={await listTickets({ projectIds: [project.id], sort: "status" })} showProject={false} />}
         {tab === "milestones" && <MilestoneManager projectId={project.id} milestones={milestones} />}
-        {tab === "architecture" && <Architecture project={project} />}
+        {tab === "architecture" && <Architecture project={project} view={sp.view} />}
         {tab === "settings" && (
           <ProjectSettings
             project={project}
@@ -101,15 +101,17 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   );
 }
 
-function Architecture({ project }: { project: Awaited<ReturnType<typeof getProjectByKey>> }) {
-  if (!project.diagram)
+function Architecture({ project, view }: { project: Awaited<ReturnType<typeof getProjectByKey>>; view?: string | string[] }) {
+  const views = project.diagram ?? [];
+  if (!views.length)
     return (
       <p className="max-w-2xl text-sm text-muted-foreground">
         No diagram yet. Your agent can push one with{" "}
         <code className="rounded bg-muted px-1 font-mono text-xs">PUT /api/v1/projects/{project.key}/diagram</code> and a body of{" "}
-        <code className="rounded bg-muted px-1 font-mono text-xs">{"{ mermaid, commit }"}</code>.
+        <code className="rounded bg-muted px-1 font-mono text-xs">{"{ commit, views: [{ id, title, mermaid }] }"}</code>.
       </p>
     );
+  const active = views.find((v) => v.id === view) ?? views[0];
   return (
     <Section
       title="Architecture"
@@ -120,7 +122,24 @@ function Architecture({ project }: { project: Awaited<ReturnType<typeof getProje
         </span>
       }
     >
-      <MermaidDiagram source={project.diagram} />
+      {views.length > 1 && (
+        <nav aria-label="Diagram views" className="mb-4 flex flex-wrap gap-1 border-b pb-2 text-sm">
+          {views.map((v) => (
+            <Link
+              key={v.id}
+              href={`/projects/${project.key}?tab=architecture&view=${v.id}`}
+              aria-current={v.id === active.id ? "page" : undefined}
+              className={cn(
+                "rounded-md px-2.5 py-1 text-muted-foreground hover:text-foreground",
+                v.id === active.id && "bg-muted text-foreground",
+              )}
+            >
+              {v.title}
+            </Link>
+          ))}
+        </nav>
+      )}
+      <MermaidDiagram key={active.id} source={active.mermaid} />
     </Section>
   );
 }

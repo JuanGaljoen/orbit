@@ -51,6 +51,8 @@ export const objectives = pgTable("objectives", {
   updatedAt: updatedAt(),
 });
 
+export type DiagramView = { id: string; title: string; mermaid: string };
+
 export const projects = pgTable(
   "projects",
   {
@@ -62,8 +64,8 @@ export const projects = pgTable(
     targetDate: date("target_date"),
     objectiveId: uuid("objective_id").references(() => objectives.id, { onDelete: "set null" }),
     ticketSeq: integer("ticket_seq").notNull().default(0),
-    // Architecture diagram (Mermaid source) pushed by the user's agents via the API.
-    diagram: text("diagram"),
+    // Architecture diagram views (Mermaid sources, in the order sent) pushed by the user's agents via the API.
+    diagram: jsonb("diagram").$type<DiagramView[]>(),
     diagramCommit: text("diagram_commit"),
     diagramUpdatedAt: timestamp("diagram_updated_at", { withTimezone: true }),
     archivedAt: timestamp("archived_at", { withTimezone: true }),

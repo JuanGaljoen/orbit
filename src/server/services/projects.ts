@@ -1,9 +1,9 @@
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/db";
-import { objectives, PROJECT_STATUSES, projectRepos, projects, repositories } from "@/db/schema";
+import { type DiagramView, objectives, PROJECT_STATUSES, projectRepos, projects, repositories } from "@/db/schema";
 import { logActivity, type Actor } from "../activity";
-import { ConflictError, NotFoundError } from "../errors";
+import { ConflictError, InvalidError, NotFoundError } from "../errors";
 import { optionalDate, parse } from "../validation";
 
 export type Project = typeof projects.$inferSelect;
@@ -114,30 +114,64 @@ export async function getProjectByKey(key: string) {
   return row;
 }
 
-const diagramInput = z.object({
-  mermaid: z.string().trim().min(1, "mermaid is required").max(100_000),
-  commit: z
-    .string()
-    .trim()
-    .regex(/^[0-9a-f]{7,40}$/i, "commit must be a git SHA")
-    .nullable()
-    .optional(),
+const diagramView = z.object({
+  id: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "id must be a kebab-case slug"),
+  title: z.string().trim().min(1, "title is required").max(200),
+  mermaid: z.string().trim().min(1, "mermaid is required").max(50_000, "mermaid must be at most 50,000 chars"),
 });
 
-const diagramOf = (p: Project) => ({ mermaid: p.diagram, commit: p.diagramCommit, updatedAt: p.diagramUpdatedAt });
+const diagramCommit = z
+  .string()
+  .trim()
+  .regex(/^[0-9a-f]{7,40}$/i, "commit must be a git SHA")
+  .nullable()
+  .optional();
+
+const diagramInput = z.preprocess(
+  // Legacy single-diagram body { mermaid, commit } is stored as one view.
+  (v) =>
+    v && typeof v === "object" && !("views" in v) && "mermaid" in v
+      ? { commit: (v as { commit?: unknown }).commit, views: [{ id: "map", title: "Architecture", mermaid: v.mermaid }] }
+      : v,
+  z.object({ commit: diagramCommit, views: z.array(z.unknown()).min(1, "send 1–6 views").max(6, "send 1–6 views") }),
+);
+
+/** Validates each view, naming the offending one (by position and id) in the error. */
+function parseViews(views: unknown[]): DiagramView[] {
+  const seen = new Set<string>();
+  return views.map((v, i) => {
+    const id = (v as { id?: unknown })?.id;
+    const label = `view ${i + 1}${typeof id === "string" ? ` ("${id}")` : ""}`;
+    const result = diagramView.safeParse(v);
+    if (!result.success) throw new InvalidError(`${label}: ${result.error.issues[0]?.message ?? "invalid view"}`);
+    if (seen.has(result.data.id)) throw new InvalidError(`${label}: duplicate id`);
+    seen.add(result.data.id);
+    return result.data;
+  });
+}
+
+const diagramOf = (p: Project) => ({ commit: p.diagramCommit, updatedAt: p.diagramUpdatedAt, views: p.diagram ?? [] });
 
 export async function getProjectDiagram(key: string) {
   return diagramOf(await getProjectByKey(key));
 }
 
-/** Replaces the project's architecture diagram (Mermaid source, drawn by the user's agent). */
-export async function setProjectDiagram(key: string, input: z.input<typeof diagramInput>, actor: Actor = "user") {
+/**
+ * Replaces the project's whole set of architecture diagram views (Mermaid sources drawn by the
+ * user's agent) — a structure map plus request flows. Order is kept; old views are not merged.
+ */
+export async function setProjectDiagram(
+  key: string,
+  input: { commit?: string | null; views: unknown[] } | { commit?: string | null; mermaid: string },
+  actor: Actor = "user",
+) {
   const data = parse(diagramInput, input);
+  const views = parseViews(data.views);
   const project = await getProjectByKey(key);
   const db = await getDb();
   const [row] = await db
     .update(projects)
-    .set({ diagram: data.mermaid, diagramCommit: data.commit ?? null, diagramUpdatedAt: new Date() })
+    .set({ diagram: views, diagramCommit: data.commit ?? null, diagramUpdatedAt: new Date() })
     .where(eq(projects.id, project.id))
     .returning();
   await logActivity(db, {
