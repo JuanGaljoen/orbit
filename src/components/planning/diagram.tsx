@@ -32,5 +32,5 @@ export function MermaidDiagram({ source }: { source: string }) {
       </div>
     );
   if (!svg) return <p className="text-sm text-muted-foreground">Rendering…</p>;
-  return <div className="overflow-x-auto [&_svg]:mx-auto [&_svg]:h-auto [&_svg]:max-w-full" dangerouslySetInnerHTML={{ __html: svg }} />;
+  return <div className="mermaid-view overflow-x-auto [&_svg]:mx-auto [&_svg]:h-auto [&_svg]:max-w-full" dangerouslySetInnerHTML={{ __html: svg }} />;
 }

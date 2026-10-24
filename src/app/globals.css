@@ -128,3 +128,19 @@
     @apply font-sans;
   }
 }
+/*
+ * Mermaid sequence diagrams on the dark theme. Mermaid's own CSS is scoped by the SVG's id, hence
+ * !important. Dashed returns (-->>) are 1.5px grey dots by default; box colours are written for a
+ * light page (and inline, so a light box would wash out its actors) — keep the hue as a tint.
+ */
+.mermaid-view svg[aria-roledescription="sequence"] {
+  .messageLine1 {
+    stroke: oklch(0.85 0 0) !important;
+    stroke-width: 1.75px !important;
+    stroke-dasharray: 6 4 !important;
+  }
+  rect.rect {
+    fill-opacity: 0.14;
+    stroke: oklch(1 0 0 / 35%);
+  }
+}

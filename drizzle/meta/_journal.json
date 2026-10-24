@@ -15,6 +15,13 @@
       "when": 1792792907090,
       "tag": "0001_hard_riptide",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792846231929,
+      "tag": "0002_stale_blackheart",
+      "breakpoints": true
     }
   ]
 }

@@ -269,3 +269,60 @@ test("board: a card dropped mid-way down an empty column lands there", async () 
   await page.reload();
   await expect(column("In Progress").locator("a", { hasText: "Errand 1" })).toBeVisible();
 });
+
+test("architecture: several diagram views pushed over the API, one sub-tab each", async () => {
+  const headers = { authorization: `Bearer ${E2E.apiToken}` };
+  const flow = [
+    "sequenceDiagram",
+    "  autonumber",
+    "  box rgb(240,248,255) Client side",
+    "    actor U as User",
+    "    participant W as Web",
+    "  end",
+    "  participant S as Service",
+    "  U->>+W: generate ring",
+    "  W->>+S: POST /rings",
+    "  Note over W,S: validated with zod",
+    "  alt valid",
+    "    S-->>W: 200 ring",
+    "  else invalid",
+    "    S-->>W: 422 error",
+    "  end",
+    "  opt cache miss",
+    "    S->>S: compute",
+    "  end",
+    "  deactivate S",
+    "  W-->>-U: ring",
+  ].join("\n");
+  const views = [
+    { id: "map", title: "Map: modules and services", mermaid: "flowchart LR\n  Web --> Service" },
+    { id: "generate-ring", title: "Flow: generate a ring", mermaid: flow },
+    { id: "broken", title: "Flow: broken", mermaid: "sequenceDiagram\n  A->>: oops" },
+  ];
+  const put = await page.request.put("/api/v1/projects/OE/diagram", { headers, data: { commit: "4bddebc", views } });
+  expect(put.status()).toBe(200);
+  const got = await (await page.request.get("/api/v1/projects/OE/diagram", { headers })).json();
+  expect(got.views.map((v: { id: string }) => v.id)).toEqual(["map", "generate-ring", "broken"]);
+  const bad = await page.request.put("/api/v1/projects/OE/diagram", { headers, data: { views: [{ id: "Bad Id", title: "x", mermaid: "x" }] } });
+  expect(bad.status()).toBe(422);
+  expect((await bad.json()).error).toMatch(/view 1 \("Bad Id"\)/);
+
+  await page.goto("/projects/OE?tab=architecture");
+  await expect(page.getByText(/Drawn from 4bddebc/)).toBeVisible();
+  const tabs = page.getByRole("navigation", { name: "Diagram views" });
+  await expect(tabs.getByRole("link", { name: "Map: modules and services" })).toHaveAttribute("aria-current", "page");
+  await expect(page.locator("main svg").first()).toBeVisible();
+
+  await tabs.getByRole("link", { name: "Flow: generate a ring" }).click();
+  const svg = page.locator("main svg[aria-roledescription=sequence]");
+  await expect(svg).toBeVisible();
+  await expect(svg.locator(".sequenceNumber")).toHaveCount(6); // autonumber: one per message
+  await expect(svg.getByText("alt", { exact: true })).toBeVisible();
+  await expect(svg.getByText("Client side")).toBeVisible(); // box
+  await expect(svg.locator(".messageLine1")).not.toHaveCount(0); // dashed returns
+  await expect(svg.locator(".activation0")).not.toHaveCount(0);
+  await page.locator("main").screenshot({ path: "test-results/architecture-flow.png" });
+
+  await tabs.getByRole("link", { name: "Flow: broken" }).click();
+  await expect(page.getByText(/Mermaid syntax error/)).toBeVisible();
+});

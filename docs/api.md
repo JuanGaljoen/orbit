@@ -35,7 +35,7 @@ lists the valid values.
 | POST | `/api/v1/tickets/{KEY-12}/comments` | `{ "body": "markdown" }` (shown as *Assistant*) |
 | GET | `/api/v1/milestones?project=KEY` | milestones with dates and progress |
 | POST | `/api/v1/proposals` | `{ title, summary, items[] }` — bigger plans queued for review in Orbit → Assistant |
-| GET / PUT | `/api/v1/projects/{KEY}/diagram` | `{ mermaid, commit? }` — replaces the project's architecture diagram (Mermaid source; `commit` = the SHA it was drawn from). Shown on the project's Architecture tab. GET returns `{ mermaid, commit, updatedAt }` |
+| GET / PUT | `/api/v1/projects/{KEY}/diagram` | `{ commit?, views: [{ id, title, mermaid }] }` — replaces the project's whole set of architecture views atomically (1–6; `id` a unique kebab-case slug, `mermaid` ≤ 50,000 chars; a bad view is a 422 naming it). Typically a structure map plus a sequence diagram per key request flow; each is a sub-tab on the Architecture tab, in order. `commit` = the SHA they were drawn from. The legacy `{ mermaid, commit? }` is stored as one view `{ id: "map", title: "Architecture" }`. GET returns `{ commit, updatedAt, views }` |
 
 - `status` accepts a status name (`"In Progress"`) or a category (`backlog`, `todo`, `in_progress`, `in_review`, `done`).
 - `type`: `feature | bug | task | improvement | research | documentation`. `priority`: a configured name (`Urgent`, `High`, `Medium`, `Low` by default).
