@@ -5,8 +5,6 @@ import { ActivityFeed } from "@/components/activity-feed";
 import { Burnup } from "@/components/charts/burnup";
 import { GithubActivityList } from "@/components/github/github-activity";
 import { PageBody, PageHeader, pct, ProgressBar, Section, Stat } from "@/components/page";
-import { NativeSelectNav } from "@/components/select-nav";
-import { MermaidDiagram } from "@/components/planning/diagram";
 import { MilestoneManager } from "@/components/planning/milestones";
 import { ProjectSettings } from "@/components/planning/project-settings";
 import { NewTicketButton } from "@/components/tickets/new-ticket-button";
@@ -88,7 +86,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
         {tab === "overview" && <Overview project={project} progress={progress} milestones={milestones} repoIds={repos.map((r) => r.id)} />}
         {tab === "tickets" && <TicketTable tickets={await listTickets({ projectIds: [project.id], sort: "status" })} showProject={false} />}
         {tab === "milestones" && <MilestoneManager projectId={project.id} milestones={milestones} />}
-        {tab === "architecture" && <Architecture project={project} view={sp.view} />}
+        {tab === "architecture" && <Architecture project={project} />}
         {tab === "settings" && (
           <ProjectSettings
             project={project}
@@ -102,31 +100,34 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   );
 }
 
-function Architecture({ project, view }: { project: Awaited<ReturnType<typeof getProjectByKey>>; view?: string | string[] }) {
-  const views = project.diagram ?? [];
-  if (!views.length)
+function Architecture({ project }: { project: Awaited<ReturnType<typeof getProjectByKey>> }) {
+  if (!project.floorplan)
     return (
-      <p className="max-w-2xl text-sm text-muted-foreground">
-        No diagram yet. Your agent can push one with{" "}
-        <code className="rounded bg-muted px-1 font-mono text-xs">PUT /api/v1/projects/{project.key}/diagram</code> and a body of{" "}
-        <code className="rounded bg-muted px-1 font-mono text-xs">{"{ commit, views: [{ id, title, mermaid }] }"}</code>.
-      </p>
+      <div className="max-w-2xl space-y-2 text-sm text-muted-foreground">
+        <p>No floorplan yet. Your agent can push one with:</p>
+        <pre className="overflow-x-auto rounded bg-muted p-3 font-mono text-xs text-foreground">
+          {`curl -X PUT -H "Authorization: Bearer $ORBIT_API_TOKEN" -H 'content-type: application/json' \\
+  -d '{ "commit": "<sha>", "graph": <graph.json> }' \\
+  "$ORBIT_URL/api/v1/projects/${project.key}/floorplan"`}
+        </pre>
+      </div>
     );
-  const active = views.find((v) => v.id === view) ?? views[0];
+  const version = project.floorplanUpdatedAt?.getTime() ?? 0;
   return (
     <Section
       title="Architecture"
       actions={
-        <span className="flex items-center gap-3 text-xs text-muted-foreground">
-          <NativeSelectNav param="view" label="Diagram" value={active.id} options={views.map((v) => ({ value: v.id, label: v.title }))} />
-          <span>
-            {project.diagramCommit && <>Drawn from <span className="font-mono">{project.diagramCommit.slice(0, 7)}</span> · </>}
-            {project.diagramUpdatedAt && `updated ${formatDistanceToNow(project.diagramUpdatedAt, { addSuffix: true })}`}
-          </span>
+        <span className="text-xs text-muted-foreground">
+          {project.floorplanCommit && <>Drawn from <span className="font-mono">{project.floorplanCommit.slice(0, 7)}</span> · </>}
+          {project.floorplanUpdatedAt && `updated ${formatDistanceToNow(project.floorplanUpdatedAt, { addSuffix: true })}`}
         </span>
       }
     >
-      <MermaidDiagram key={active.id} source={active.mermaid} />
+      <iframe
+        title="Architecture floorplan"
+        src={`/projects/${project.key}/floorplan.html?v=${version}`}
+        className="h-[calc(100vh-13rem)] min-h-[520px] w-full rounded-lg border"
+      />
     </Section>
   );
 }

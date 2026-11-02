@@ -35,7 +35,7 @@ lists the valid values.
 | POST | `/api/v1/tickets/{KEY-12}/comments` | `{ "body": "markdown" }` (shown as *Assistant*) |
 | GET | `/api/v1/milestones?project=KEY` | milestones with dates and progress |
 | POST | `/api/v1/proposals` | `{ title, summary, items[] }` — bigger plans queued for review in Orbit → Assistant |
-| GET / PUT | `/api/v1/projects/{KEY}/diagram` | `{ commit?, views: [{ id, title, mermaid }] }` — replaces the project's whole set of architecture views atomically (1–6; `id` a unique kebab-case slug, `mermaid` ≤ 50,000 chars; a bad view is a 422 naming it). Typically a structure map plus a sequence diagram per key request flow; each is a sub-tab on the Architecture tab, in order. `commit` = the SHA they were drawn from. The legacy `{ mermaid, commit? }` is stored as one view `{ id: "map", title: "Architecture" }`. GET returns `{ commit, updatedAt, views }` |
+| GET / PUT | `/api/v1/projects/{KEY}/floorplan` | `{ commit?, graph }` — replaces the project's whole [Floorplan](https://github.com/haydenschmitty/floorplan) graph (the `graph.json` the lorekeep `diagram` skill builds; no merge). Rendered by the Architecture tab. `graph.schema` must start `floorplan/graph` and `nodes`, `files`, `links` must be arrays; at most 4 MB; anything else is a 422 naming the problem. Graph JSON only — HTML is never accepted. `commit` = the SHA it was drawn from. GET returns `{ commit, updatedAt, graph }` (`graph` is `null` until pushed) |
 
 - `status` accepts a status name (`"In Progress"`) or a category (`backlog`, `todo`, `in_progress`, `in_review`, `done`).
 - `type`: `feature | bug | task | improvement | research | documentation`. `priority`: a configured name (`Urgent`, `High`, `Medium`, `Low` by default).
