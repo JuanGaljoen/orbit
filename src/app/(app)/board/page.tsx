@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageBody, PageHeader, pct, ProgressBar } from "@/components/page";
 import { NewProjectDialog } from "@/components/planning/new-project-dialog";
-import { boardTint } from "@/lib/board-tint";
+import { boardSwatch } from "@/lib/board-tint";
 import { cn } from "@/lib/utils";
 import { requireUser } from "@/server/auth";
 import { listObjectives } from "@/server/services/objectives";
@@ -29,9 +29,10 @@ export default async function BoardsPage({ searchParams }: PageProps<"/board">) 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {projects.map((p) => {
             const pr = progress.get(p.id)!;
+            const swatch = boardSwatch(p);
             return (
               <Link key={p.id} href={`/board/${p.key}`} className={tile}>
-                <div className={cn("h-12 shrink-0", boardTint(p.key))} />
+                <div className={cn("h-12 shrink-0", swatch.className)} style={swatch.style} />
                 <div className="flex flex-1 flex-col gap-2 p-3">
                   <div className="flex items-baseline gap-2">
                     <span className="font-mono text-xs text-muted-foreground">{p.key}</span>

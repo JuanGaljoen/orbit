@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { setupTestDb } from "../../../test/db";
-import { createProject, FLOORPLAN_MAX_BYTES, getProjectFloorplan, setProjectFloorplan } from "./projects";
+import { InvalidError } from "../errors";
+import { createProject, FLOORPLAN_MAX_BYTES, getProjectFloorplan, setProjectFloorplan, updateProject } from "./projects";
 import { recentActivity } from "./views";
 
 setupTestDb();
@@ -49,5 +50,20 @@ describe("project floorplan", () => {
     await bad({ graph: graph(), commit: "not a sha" }).toThrow(/commit/);
     await expect(setProjectFloorplan("NOPE", { graph: graph() })).rejects.toThrow(/Project NOPE not found/);
     expect((await getProjectFloorplan("RNG")).graph).toBeNull(); // nothing stored by the failures
+  });
+});
+
+describe("project colour", () => {
+  it("stores a hex colour normalised to lower case, and clears it with null", async () => {
+    const p = await createProject({ key: "CLR", name: "Colour" });
+    expect(p.color).toBeNull();
+
+    expect((await updateProject(p.id, { color: "#A1B2C3" })).color).toBe("#a1b2c3");
+    expect((await updateProject(p.id, { color: null })).color).toBeNull();
+  });
+
+  it.each(["red", "#fff", "#12345g", "a1b2c3"])("rejects %s", async (bad) => {
+    const p = await createProject({ key: "BAD", name: "Bad" });
+    await expect(updateProject(p.id, { color: bad })).rejects.toBeInstanceOf(InvalidError);
   });
 });

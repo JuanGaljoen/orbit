@@ -21,6 +21,12 @@ const projectInput = z.object({
   status: z.enum(PROJECT_STATUSES).default("active"),
   targetDate: optionalDate,
   objectiveId: z.uuid().nullable().optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, "Colour must be a #rrggbb hex value")
+    .transform((s) => s.toLowerCase())
+    .nullable()
+    .optional(),
 });
 
 export type ProjectInput = z.input<typeof projectInput>;

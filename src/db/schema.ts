@@ -60,6 +60,8 @@ export const projects = pgTable(
     description: text("description").notNull().default(""),
     status: text("status", { enum: PROJECT_STATUSES }).notNull().default("active"),
     targetDate: date("target_date"),
+    // Optional board colour (#rrggbb). Null = automatic, derived from the key (see lib/board-tint).
+    color: text("color"),
     objectiveId: uuid("objective_id").references(() => objectives.id, { onDelete: "set null" }),
     ticketSeq: integer("ticket_seq").notNull().default(0),
     // Floorplan graph (floorplan/graph JSON) pushed by the user's agents via the API; rendered by the Architecture tab.

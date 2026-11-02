@@ -15,6 +15,7 @@ export type ProjectFormValues = {
   status: (typeof PROJECT_STATUSES)[number];
   targetDate: string | null;
   objectiveId: string | null;
+  color: string | null;
 };
 
 export function ProjectForm({
@@ -37,6 +38,7 @@ export function ProjectForm({
     status: "active",
     targetDate: null,
     objectiveId: null,
+    color: null,
     ...initial,
   });
   const [busy, setBusy] = useState(false);
@@ -122,6 +124,26 @@ export function ProjectForm({
           </NativeSelect>
         </label>
       </div>
+      {isEdit && (
+        <div className="space-y-1.5">
+          <span className="text-sm font-medium">Board colour</span>
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              aria-label="Board colour"
+              value={v.color ?? "#71717a"}
+              onChange={(e) => setV({ ...v, color: e.target.value })}
+              className="h-8 w-12 cursor-pointer rounded border bg-transparent"
+            />
+            <span className="text-xs text-muted-foreground">{v.color ?? "Automatic"}</span>
+            {v.color && (
+              <Button type="button" size="sm" variant="ghost" onClick={() => setV({ ...v, color: null })}>
+                Use automatic colour
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
       <div className="flex justify-end gap-2">
         {onCancel && (
           <Button type="button" variant="ghost" onClick={onCancel}>
