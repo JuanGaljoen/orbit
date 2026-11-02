@@ -105,3 +105,8 @@ pnpm import:tickets export.json   # bulk import keeping keys + dates (format: sr
 Architecture: all domain logic lives in `src/server/services/*` behind validated inputs. Server
 actions (`src/actions`), the REST API (`src/app/api/v1`) and the assistant's tools
 (`src/server/ai/tools.ts`) are thin callers of the same services.
+
+## Third-party software
+
+- **[Floorplan](https://github.com/haydenschmitty/floorplan)** viewer (MIT, © 2026 Hayden Smith) — vendored in `src/vendor/floorplan/`; it powers the Architecture tab.
+- **elkjs** (EPL-2.0), **Inter** and **JetBrains Mono** (SIL OFL-1.1) — bundled with it; licences in `src/vendor/floorplan/assets/vendor/`.
