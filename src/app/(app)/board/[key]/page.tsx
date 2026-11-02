@@ -4,7 +4,7 @@ import { PageBody, PageHeader } from "@/components/page";
 import { Board } from "@/components/tickets/board";
 import { NewTicketButton } from "@/components/tickets/new-ticket-button";
 import { TicketFilters } from "@/components/tickets/ticket-filters";
-import { boardTint } from "@/lib/board-tint";
+import { boardSwatch } from "@/lib/board-tint";
 import { filterFromParams } from "@/lib/ticket-params";
 import { cn } from "@/lib/utils";
 import { requireUser } from "@/server/auth";
@@ -35,7 +35,7 @@ export default async function BoardPage({ params, searchParams }: PageProps<"/bo
       <PageHeader
         title={
           <span className="flex items-center gap-2">
-            <span className={cn("inline-block size-2.5 rounded-sm", boardTint(project.key))} />
+            <span className={cn("inline-block size-2.5 rounded-sm", boardSwatch(project).className)} style={boardSwatch(project).style} />
             <span className="font-mono text-sm text-muted-foreground">{project.key}</span> {project.name}
           </span>
         }
