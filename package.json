@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
+    "floorplan:template": "node scripts/build-floorplan-template.mjs",
     "db:migrate": "tsx scripts/migrate.ts",
     "vercel-build": "pnpm db:migrate && next build",
     "import:tickets": "tsx --conditions=react-server scripts/import.ts"
@@ -32,7 +33,6 @@
     "drizzle-orm": "^0.45.4",
     "jose": "^6.2.12",
     "lucide-react": "^1.59.0",
-    "mermaid": "^12.2.0",
     "next": "16.4.2",
     "radix-ui": "^1.8.1",
     "react": "19.3.0",

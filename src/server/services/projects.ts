@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/db";
-import { type DiagramView, objectives, PROJECT_STATUSES, projectRepos, projects, repositories } from "@/db/schema";
+import { objectives, PROJECT_STATUSES, projectRepos, projects, repositories } from "@/db/schema";
 import { logActivity, type Actor } from "../activity";
 import { ConflictError, InvalidError, NotFoundError } from "../errors";
 import { optionalDate, parse } from "../validation";
@@ -114,75 +114,60 @@ export async function getProjectByKey(key: string) {
   return row;
 }
 
-const diagramView = z.object({
-  id: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "id must be a kebab-case slug"),
-  title: z.string().trim().min(1, "title is required").max(200),
-  mermaid: z.string().trim().min(1, "mermaid is required").max(50_000, "mermaid must be at most 50,000 chars"),
+/** Hard cap on a stored graph. Vercel limits request bodies to 4.5 MB, so a larger cap would be unreachable. */
+export const FLOORPLAN_MAX_BYTES = 4_000_000;
+
+const floorplanInput = z.object({
+  commit: z
+    .string()
+    .trim()
+    .regex(/^[0-9a-f]{7,40}$/i, "commit must be a git SHA")
+    .nullable()
+    .optional(),
+  graph: z.record(z.string(), z.unknown(), { error: "graph must be an object" }),
 });
 
-const diagramCommit = z
-  .string()
-  .trim()
-  .regex(/^[0-9a-f]{7,40}$/i, "commit must be a git SHA")
-  .nullable()
-  .optional();
-
-const diagramInput = z.preprocess(
-  // Legacy single-diagram body { mermaid, commit } is stored as one view.
-  (v) =>
-    v && typeof v === "object" && !("views" in v) && "mermaid" in v
-      ? { commit: (v as { commit?: unknown }).commit, views: [{ id: "map", title: "Architecture", mermaid: v.mermaid }] }
-      : v,
-  z.object({ commit: diagramCommit, views: z.array(z.unknown()).min(1, "send 1–6 views").max(6, "send 1–6 views") }),
-);
-
-/** Validates each view, naming the offending one (by position and id) in the error. */
-function parseViews(views: unknown[]): DiagramView[] {
-  const seen = new Set<string>();
-  return views.map((v, i) => {
-    const id = (v as { id?: unknown })?.id;
-    const label = `view ${i + 1}${typeof id === "string" ? ` ("${id}")` : ""}`;
-    const result = diagramView.safeParse(v);
-    if (!result.success) throw new InvalidError(`${label}: ${result.error.issues[0]?.message ?? "invalid view"}`);
-    if (seen.has(result.data.id)) throw new InvalidError(`${label}: duplicate id`);
-    seen.add(result.data.id);
-    return result.data;
-  });
+/** The graph must look like Floorplan's graph.json; the viewer does the rest. Names the first problem. */
+function checkGraph(graph: Record<string, unknown>) {
+  if (typeof graph.schema !== "string" || !graph.schema.startsWith("floorplan/graph"))
+    throw new InvalidError('graph.schema must be a string starting with "floorplan/graph"');
+  for (const field of ["nodes", "files", "links"])
+    if (!Array.isArray(graph[field])) throw new InvalidError(`graph.${field} must be an array`);
+  const bytes = Buffer.byteLength(JSON.stringify(graph));
+  if (bytes > FLOORPLAN_MAX_BYTES)
+    throw new InvalidError(`graph is ${(bytes / 1e6).toFixed(1)} MB; the limit is ${FLOORPLAN_MAX_BYTES / 1e6} MB`);
 }
 
-const diagramOf = (p: Project) => ({ commit: p.diagramCommit, updatedAt: p.diagramUpdatedAt, views: p.diagram ?? [] });
+const floorplanOf = (p: Project) => ({ commit: p.floorplanCommit, updatedAt: p.floorplanUpdatedAt, graph: p.floorplan });
 
-export async function getProjectDiagram(key: string) {
-  return diagramOf(await getProjectByKey(key));
+export async function getProjectFloorplan(key: string) {
+  return floorplanOf(await getProjectByKey(key));
 }
 
-/**
- * Replaces the project's whole set of architecture diagram views (Mermaid sources drawn by the
- * user's agent) — a structure map plus request flows. Order is kept; old views are not merged.
- */
-export async function setProjectDiagram(
+/** Replaces the project's whole Floorplan graph (no merge). Only graph JSON is accepted, never HTML. */
+export async function setProjectFloorplan(
   key: string,
-  input: { commit?: string | null; views: unknown[] } | { commit?: string | null; mermaid: string },
+  input: { commit?: string | null; graph: unknown },
   actor: Actor = "user",
 ) {
-  const data = parse(diagramInput, input);
-  const views = parseViews(data.views);
+  const data = parse(floorplanInput, input);
+  checkGraph(data.graph);
   const project = await getProjectByKey(key);
   const db = await getDb();
   const [row] = await db
     .update(projects)
-    .set({ diagram: views, diagramCommit: data.commit ?? null, diagramUpdatedAt: new Date() })
+    .set({ floorplan: data.graph, floorplanCommit: data.commit ?? null, floorplanUpdatedAt: new Date() })
     .where(eq(projects.id, project.id))
     .returning();
   await logActivity(db, {
-    kind: "project.diagram_updated",
+    kind: "project.floorplan_updated",
     entityType: "project",
     entityId: row.id,
     projectId: row.id,
-    summary: `Updated the architecture diagram of ${row.key}${data.commit ? ` (from ${data.commit.slice(0, 7)})` : ""}`,
+    summary: `Updated the architecture floorplan of ${row.key}${data.commit ? ` (from ${data.commit.slice(0, 7)})` : ""}`,
     actor,
   });
-  return diagramOf(row);
+  return floorplanOf(row);
 }
 
 export async function getProject(id: string) {

@@ -1,4 +1,5 @@
 import { createHmac } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { E2E } from "../playwright.config";
 
@@ -270,61 +271,50 @@ test("board: a card dropped mid-way down an empty column lands there", async () 
   await expect(column("In Progress").locator("a", { hasText: "Errand 1" })).toBeVisible();
 });
 
-test("architecture: several diagram views pushed over the API, picked from a dropdown", async () => {
+test("architecture: the Floorplan graph pushed over the API renders in the tab", async () => {
   const headers = { authorization: `Bearer ${E2E.apiToken}` };
-  const flow = [
-    "sequenceDiagram",
-    "  autonumber",
-    "  box rgb(240,248,255) Client side",
-    "    actor U as User",
-    "    participant W as Web",
-    "  end",
-    "  participant S as Service",
-    "  U->>+W: generate ring",
-    "  W->>+S: POST /rings",
-    "  Note over W,S: validated with zod",
-    "  alt valid",
-    "    S-->>W: 200 ring",
-    "  else invalid",
-    "    S-->>W: 422 error",
-    "  end",
-    "  opt cache miss",
-    "    S->>S: compute",
-    "  end",
-    "  deactivate S",
-    "  W-->>-U: ring",
-  ].join("\n");
-  const views = [
-    { id: "map", title: "Map: modules and services", mermaid: "flowchart LR\n  Web --> Service" },
-    { id: "generate-ring", title: "Flow: generate a ring", mermaid: flow },
-    { id: "broken", title: "Flow: broken", mermaid: "sequenceDiagram\n  A->>: oops" },
-  ];
-  const put = await page.request.put("/api/v1/projects/OE/diagram", { headers, data: { commit: "4bddebc", views } });
-  expect(put.status()).toBe(200);
-  const got = await (await page.request.get("/api/v1/projects/OE/diagram", { headers })).json();
-  expect(got.views.map((v: { id: string }) => v.id)).toEqual(["map", "generate-ring", "broken"]);
-  const bad = await page.request.put("/api/v1/projects/OE/diagram", { headers, data: { views: [{ id: "Bad Id", title: "x", mermaid: "x" }] } });
+  const graph = JSON.parse(readFileSync("e2e/fixtures/floorplan-graph.json", "utf8"));
+  const url = "/api/v1/projects/OE/floorplan";
+
+  await page.goto("/projects/OE?tab=architecture");
+  await expect(page.getByText("No floorplan yet")).toBeVisible();
+  expect((await page.request.get("/projects/OE/floorplan.html")).status()).toBe(404);
+
+  const bad = await page.request.put(url, { headers, data: { graph: { ...graph, schema: "other" } } });
   expect(bad.status()).toBe(422);
-  expect((await bad.json()).error).toMatch(/view 1 \("Bad Id"\)/);
+  expect((await bad.json()).error).toMatch(/graph\.schema/);
+  expect((await page.request.put(url, { headers: {}, data: { graph } })).status()).toBe(401);
+
+  const put = await page.request.put(url, { headers, data: { commit: "4bddebc", graph } });
+  expect(put.status()).toBe(200);
+  expect((await (await page.request.get(url, { headers })).json()).graph.schema).toBe(graph.schema);
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const failedApi: string[] = [];
+  page.on("response", (r) => r.url().includes("/api/") && !r.url().includes("/api/v1/") && r.status() >= 400 && failedApi.push(r.url()));
 
   await page.goto("/projects/OE?tab=architecture");
   await expect(page.getByText(/Drawn from 4bddebc/)).toBeVisible();
-  const picker = page.getByLabel("Diagram");
-  await expect(picker).toHaveValue("map");
-  await expect(picker.locator("option")).toHaveText(["Map: modules and services", "Flow: generate a ring", "Flow: broken"]);
-  await expect(page.locator("main svg").first()).toBeVisible();
+  const viewer = page.frameLocator("iframe[title='Architecture floorplan']");
+  await expect(viewer.locator("#proj-name")).not.toBeEmpty();
+  await expect(viewer.locator("svg").first()).toBeVisible();
+  await expect(viewer.locator("#ask")).toBeHidden(); // no local Claude CLI behind /api/ask
+  await expect(viewer.getByText(/Floorplan Cloud/i)).toHaveCount(0);
+  // Exercise the header controls that used to depend on Floorplan's local server: theme, tour, health, flows, filters.
+  const controls = viewer.locator("#hdr-ext button, #flows-btn, #filters-btn");
+  const count = await controls.count();
+  expect(count).toBeGreaterThanOrEqual(4);
+  for (let i = 0; i < count; i++) {
+    await controls.nth(i).click();
+    await page.keyboard.press("Escape");
+  }
+  await page.waitForTimeout(3000);
+  expect(errors).toEqual([]);
+  expect(failedApi).toEqual([]); // the viewer asks Orbit for no /api route of its own
+  await page.locator("main").screenshot({ path: "test-results/architecture-floorplan.png" });
 
-  await picker.selectOption({ label: "Flow: generate a ring" });
-  await expect(page).toHaveURL(/view=generate-ring/);
-  const svg = page.locator("main svg[aria-roledescription=sequence]");
-  await expect(svg).toBeVisible();
-  await expect(svg.locator(".sequenceNumber")).toHaveCount(6); // autonumber: one per message
-  await expect(svg.getByText("alt", { exact: true })).toBeVisible();
-  await expect(svg.getByText("Client side")).toBeVisible(); // box
-  await expect(svg.locator(".messageLine1")).not.toHaveCount(0); // dashed returns
-  await expect(svg.locator(".activation0")).not.toHaveCount(0);
-  await page.locator("main").screenshot({ path: "test-results/architecture-flow.png" });
-
-  await picker.selectOption({ label: "Flow: broken" });
-  await expect(page.getByText(/Mermaid syntax error/)).toBeVisible();
+  const res = await page.request.get("/projects/OE/floorplan.html");
+  expect(res.headers()["x-frame-options"]).toBe("SAMEORIGIN");
+  expect(res.headers()["content-security-policy"]).toContain("frame-ancestors 'self'");
 });
